@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int       @id @default(autoincrement())
+  name           String    @default("Trader")
+  email          String    @unique
+  contactNumber  String    @default("0000000000")
+  alternateEmail String?
+  password       String
+  isVerified     Boolean   @default(false)
+  otpCode        String?
+  otpExpiresAt   DateTime?
+  balance        Float     @default(100000.0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  trades    Trade[]
+  holdings  Holding[]
+
+  @@index([email])
+}
+
+model Trade {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  symbol    String
+  type      TradeType
+  price     Float
+  quantity  Int
+  timestamp DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([symbol])
+}
+
+model Holding {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  symbol    String
+  quantity  Int
+  avgPrice  Float
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, symbol])
+  @@index([userId])
+}
+
+enum TradeType {
+  BUY
+  SELL
+}

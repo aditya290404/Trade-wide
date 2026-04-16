@@ -1,0 +1,38 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies (Backend)
+      working-directory: ./backend
+      run: npm ci
+
+    - name: Run Backend Tests
+      working-directory: ./backend
+      run: npm run test
+
+    - name: Build Backend docker image
+      working-directory: ./backend
+      run: docker build -t tradewide-backend:latest .
+
+    - name: Install dependencies (Frontend)
+      run: npm ci
+
+    - name: Build Frontend
+      run: npm run build
