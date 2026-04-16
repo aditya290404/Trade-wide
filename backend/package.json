@@ -9,7 +9,7 @@
     "build": "tsc",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "test": "vitest run"
+    "test": "vitest run -c vitest.config.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1021.0",
