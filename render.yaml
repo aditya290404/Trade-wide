@@ -1,7 +1,6 @@
 databases:
   # 1. PostgreSQL Database
   - name: tradewide-db
-    plan: free
     region: oregon 
     # Or your preferred region
 
@@ -10,7 +9,6 @@ services:
   - type: web
     name: tradewide-backend
     env: node
-    plan: free
     rootDir: backend
     buildCommand: npm install && npx prisma generate && npm run build && npm run db:push
     startCommand: npm start
@@ -32,7 +30,6 @@ services:
   - type: web
     name: tradewide-ui
     env: static
-    plan: free
     rootDir: .
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
