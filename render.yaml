@@ -1,11 +1,11 @@
-services:
+databases:
   # 1. PostgreSQL Database
-  - type: psql
-    name: tradewide-db
+  - name: tradewide-db
     plan: free
     region: oregon 
     # Or your preferred region
 
+services:
   # 2. Express Backend Server
   - type: web
     name: tradewide-backend
@@ -42,4 +42,3 @@ services:
           type: web
           name: tradewide-backend
           property: host
-        # VITE_API_URL will be set automatically to something like https://tradewide-backend.onrender.com
