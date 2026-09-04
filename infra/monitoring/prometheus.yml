@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'paper-trade-backend'
+    # Scrape backend application if metrics exposed via prom-client
+    static_configs:
+      - targets: ['paper-trade-backend:5000']
+
+  - job_name: 'node-exporter'
+    # EC2 instance metrics
+    static_configs:
+      - targets: ['node-exporter:9100']

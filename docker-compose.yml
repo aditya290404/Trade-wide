@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: paper-trade-db
+    environment:
+      POSTGRES_USER: paperuser
+      POSTGRES_PASSWORD: paperpassword
+      POSTGRES_DB: papertrade
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    container_name: paper-trade-backend
+    ports:
+      - "5000:5000"
+    environment:
+      DATABASE_URL: "postgresql://paperuser:paperpassword@db:5432/papertrade?schema=public"
+      JWT_SECRET: "supersecretpapertradingkey"
+      PORT: 5000
+    depends_on:
+      - db
+    # Command to run migrations before starting the app (useful for devops demo)
+    command: sh -c "npx prisma db push --accept-data-loss && npx ts-node src/index.ts"
+
+  frontend:
+    build: ./frontend
+    container_name: paper-trade-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: "http://localhost:5000"
+
+volumes:
+  pgdata:
