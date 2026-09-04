@@ -1,0 +1,79 @@
+---
+- name: Setup Paper Trade Server (Docker, Docker-Compose, Jenkins)
+  hosts: all
+  become: yes
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install prerequisite packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - default-jdk # Required for Jenkins
+        state: present
+
+    # -- Docker Setup --
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker APT repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Install Docker and Docker Compose
+      apt:
+        name: 
+          - docker-ce
+          - docker-compose-plugin
+        state: present
+
+    - name: Ensure Docker runs on boot
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    # -- Jenkins Setup --
+    - name: Add Jenkins GPG key
+      apt_key:
+        url: https://pkg.jenkins.io/debian/jenkins.io-2023.key
+        state: present
+
+    - name: Add Jenkins APT repository
+      apt_repository:
+        repo: deb https://pkg.jenkins.io/debian binary/
+        state: present
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+
+    - name: Ensure Jenkins runs on boot
+      systemd:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    - name: Give Jenkins access to Docker
+      user:
+        name: jenkins
+        groups: docker
+        append: yes
+
+    - name: Restart Jenkins to apply group changes
+      systemd:
+        name: jenkins
+        state: restarted

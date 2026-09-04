@@ -1,36 +1,24 @@
 import { Request, Response, NextFunction } from 'express';
-import { catchAsync } from '../utils/catchAsync';
-import { AppError } from '../utils/AppError';
-import { verifyToken } from '../utils/jwt';
-import prisma from '../config/db';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretpapertradingkey';
 
 export interface AuthRequest extends Request {
-  user?: any;
+  userId?: number;
 }
 
-export const protect = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  let token;
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
-  }
+export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: 'No token provided' });
 
-  if (!token) {
-    return next(new AppError('You are not logged in! Please log in to get access.', 401));
-  }
+  const token = authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'No token provided' });
 
   try {
-    const decoded = verifyToken(token);
-    const currentUser = await prisma.user.findUnique({
-      where: { id: decoded.id }
-    });
-
-    if (!currentUser) {
-      return next(new AppError('The user belonging to this token does no longer exist.', 401));
-    }
-
-    req.user = currentUser;
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    req.userId = decoded.userId;
     next();
-  } catch (err) {
-    return next(new AppError('Invalid token. Please log in again!', 401));
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid token' });
   }
-});
+};

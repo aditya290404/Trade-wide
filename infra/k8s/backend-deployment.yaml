@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paper-trade-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: paper-trade-backend
+  template:
+    metadata:
+      labels:
+        app: paper-trade-backend
+    spec:
+      containers:
+        - name: backend
+          # In a real environment, this would be pulled from ECR or Docker Hub
+          image: paper-trade-backend:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DATABASE_URL
+              value: "postgresql://paperuser:paperpassword@postgres-service:5432/papertrade?schema=public"
+            - name: JWT_SECRET
+              value: "supersecretpapertradingkey"
+          ports:
+            - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  type: ClusterIP
+  selector:
+    app: paper-trade-backend
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000

@@ -1,14 +1,10 @@
-FROM node:20-alpine
-
+FROM node:22-alpine
+RUN apk add --no-cache openssl
 WORKDIR /app
-
 COPY package*.json ./
-RUN npm install
-
-COPY . .
-
+RUN npm install --no-package-lock
+COPY prisma ./prisma/
 RUN npx prisma generate
-
-EXPOSE 3000
-
-CMD ["sh", "-c", "npx prisma db push && npm run dev"]
+COPY . .
+EXPOSE 5000
+CMD ["npx", "ts-node", "src/index.ts"]
