@@ -11,26 +11,69 @@ model User {
   id        Int         @id @default(autoincrement())
   email     String      @unique
   password  String      
-  balance   Float       @default(100000.0) // $100k starting paper money
+  balance   Float       @default(100000.0)
   createdAt DateTime    @default(now())
   
+  orders    Order[]
   trades    Trade[]
-  portfolio Portfolio[]
+  holdings  Holding[]
+  positions Position[]
+  portfolioHistory PortfolioHistory[]
   watchlist Watchlist[]
+}
+
+enum OrderType {
+  MARKET
+  LIMIT
+  STOP_LOSS
+  STOP_LIMIT
+}
+
+enum TradeType {
+  BUY
+  SELL
+}
+
+enum OrderStatus {
+  PENDING
+  EXECUTED
+  CANCELLED
+  REJECTED
+}
+
+model Order {
+  id            Int         @id @default(autoincrement())
+  userId        Int
+  user          User        @relation(fields: [userId], references: [id])
+  symbol        String
+  type          TradeType
+  orderType     OrderType
+  targetPrice   Float?
+  stopPrice     Float?
+  quantity      Int
+  filledQty     Int         @default(0)
+  status        OrderStatus @default(PENDING)
+  isIntraday    Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  trades        Trade[]
 }
 
 model Trade {
   id        Int      @id @default(autoincrement())
+  orderId   Int
+  order     Order    @relation(fields: [orderId], references: [id])
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
   symbol    String
-  type      String   // "BUY" or "SELL"
+  type      TradeType
   quantity  Int
   price     Float
   timestamp DateTime @default(now())
 }
 
-model Portfolio {
+model Holding {
   id           Int    @id @default(autoincrement())
   userId       Int
   user         User   @relation(fields: [userId], references: [id])
@@ -39,6 +82,26 @@ model Portfolio {
   averagePrice Float
   
   @@unique([userId, symbol])
+}
+
+model Position {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+  symbol       String
+  quantity     Int
+  averagePrice Float
+  createdAt    DateTime @default(now())
+  
+  @@unique([userId, symbol])
+}
+
+model PortfolioHistory {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+  totalValue   Float
+  timestamp    DateTime @default(now())
 }
 
 model Watchlist {

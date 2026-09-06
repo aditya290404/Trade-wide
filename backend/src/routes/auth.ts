@@ -21,6 +21,29 @@ router.post('/register', async (req, res) => {
       data: { email, password: hashedPassword }
     });
 
+    // Seed 30 days of simulated Portfolio History (Random Walk ending at starting balance)
+    const historyData = [];
+    const now = new Date();
+    let currentVal = user.balance;
+    
+    // Generate backwards
+    for (let i = 0; i <= 30; i++) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      historyData.push({
+        userId: user.id,
+        totalValue: Number(currentVal.toFixed(2)),
+        timestamp: date
+      });
+      // Previous day = currentVal / (1 + random return between -2% and 2%)
+      const dailyReturn = (Math.random() * 0.04) - 0.02;
+      currentVal = currentVal / (1 + dailyReturn);
+    }
+
+    // Reverse to chronological order and insert
+    await prisma.portfolioHistory.createMany({
+      data: historyData.reverse()
+    });
+
     const token = jwt.sign({ userId: user.id }, JWT_SECRET);
     res.json({ token, balance: user.balance });
   } catch (error) {

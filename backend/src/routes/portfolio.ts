@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { getCurrentMarketPrices } from '../utils/marketData';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -9,35 +10,54 @@ router.use(authenticate);
 
 router.get('/', async (req: AuthRequest, res) => {
   try {
-    const portfolio = await prisma.portfolio.findMany({
-      where: { userId: req.userId }
-    });
-
+    const holdings = await prisma.holding.findMany({ where: { userId: req.userId } });
+    const positions = await prisma.position.findMany({ where: { userId: req.userId } });
     const user = await prisma.user.findUnique({ where: { id: req.userId }});
     
-    // In a real app, we would fetch live market prices for these symbols to evaluate current value
-    const evaluatedPortfolio = portfolio.map(item => {
-      // simulate 2% fluctuation as current price
-      const currentPrice = Number((item.averagePrice * (1 + (Math.random() * 0.04 - 0.02))).toFixed(2)); 
+    const marketPrices = getCurrentMarketPrices();
+    
+    const evaluate = (items: any[]) => items.map(item => {
+      const currentPrice = marketPrices[item.symbol] || item.averagePrice; 
       const totalValue = currentPrice * item.quantity;
-      const profitLoss = totalValue - (item.averagePrice * item.quantity);
+      const investedValue = item.averagePrice * item.quantity;
+      const profitLoss = totalValue - investedValue;
       
       return {
         ...item,
         currentPrice,
         totalValue: Number(totalValue.toFixed(2)),
+        investedValue: Number(investedValue.toFixed(2)),
         profitLoss: Number(profitLoss.toFixed(2)),
-        profitLossPercentage: Number(((profitLoss / (item.averagePrice * item.quantity)) * 100).toFixed(2))
+        profitLossPercentage: Number(((profitLoss / investedValue) * 100).toFixed(2))
       };
     });
 
+    const evaluatedHoldings = evaluate(holdings);
+    const evaluatedPositions = evaluate(positions);
+
+    const totalHoldingsValue = evaluatedHoldings.reduce((sum, item) => sum + item.totalValue, 0);
+    const totalPositionsValue = evaluatedPositions.reduce((sum, item) => sum + item.totalValue, 0);
+
     res.json({
       balance: user?.balance || 0,
-      holdings: evaluatedPortfolio,
-      totalPortfolioValue: evaluatedPortfolio.reduce((sum, item) => sum + item.totalValue, 0)
+      holdings: evaluatedHoldings,
+      positions: evaluatedPositions,
+      totalPortfolioValue: totalHoldingsValue + totalPositionsValue
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch portfolio' });
+  }
+});
+
+router.get('/history', async (req: AuthRequest, res) => {
+  try {
+    const history = await prisma.portfolioHistory.findMany({
+      where: { userId: req.userId },
+      orderBy: { timestamp: 'asc' }
+    });
+    res.json(history);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch history' });
   }
 });
 

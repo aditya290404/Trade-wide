@@ -18,8 +18,8 @@ pipeline {
             steps {
                 dir('backend') {
                     sh 'npm install'
-                    sh 'npx tsc --noEmit' // basic compilation check
-                    // sh 'npm run test' - add jest tests here
+                    sh 'npx tsc --noEmit' // Basic compilation check
+                    sh 'npm run test'     // Run Jest unit tests
                 }
             }
         }

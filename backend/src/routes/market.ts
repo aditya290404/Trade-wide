@@ -1,31 +1,19 @@
 import { Router } from 'express';
+import { STOCKS, getLivePrice } from '../utils/marketData';
 
 const router = Router();
-
-// Mock stock data generator
-const STOCKS = [
-  { symbol: 'AAPL', name: 'Apple Inc.', basePrice: 175.5 },
-  { symbol: 'GOOGL', name: 'Alphabet Inc.', basePrice: 140.2 },
-  { symbol: 'MSFT', name: 'Microsoft Corp.', basePrice: 410.0 },
-  { symbol: 'AMZN', name: 'Amazon.com Inc.', basePrice: 178.1 },
-  { symbol: 'TSLA', name: 'Tesla Inc.', basePrice: 195.3 },
-];
-
-// Generate somewhat realistic randomized prices based on a seed or time
-const getLivePrice = (basePrice: number) => {
-  const dateSeed = new Date().getMinutes();
-  const fluctuation = (Math.sin(dateSeed) * 5) + (Math.random() * 2 - 1);
-  return Number((basePrice + fluctuation).toFixed(2));
-};
 
 router.get('/', (req, res) => {
   const q = req.query.q as string;
   
-  let results = STOCKS.map(s => ({
-    ...s,
-    currentPrice: getLivePrice(s.basePrice),
-    change: Number((getLivePrice(s.basePrice) - s.basePrice).toFixed(2))
-  }));
+  let results = STOCKS.map(s => {
+    const currentPrice = getLivePrice(s.basePrice);
+    return {
+      ...s,
+      currentPrice,
+      change: Number((currentPrice - s.basePrice).toFixed(2))
+    };
+  });
 
   if (q) {
     results = results.filter(s => s.symbol.toLowerCase().includes(q.toLowerCase()) || s.name.toLowerCase().includes(q.toLowerCase()));
